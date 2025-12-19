@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>受発注管理システム - メニュー</title>
+    <style>
+        /* 全体のスタイル設定 */
+        body { 
+            background-color: #1a1a1a; 
+            color: white; 
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+
+        .menu-container { 
+            text-align: center; 
+            background-color: #262626; 
+            padding: 40px 60px; 
+            border-radius: 12px; 
+            border: 1px solid #444;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        h1 { 
+            margin-bottom: 10px; 
+            font-size: 2em; 
+            letter-spacing: 2px;
+        }
+
+        .user-info {
+            color: #aaa;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        /* メニューボタンのスタイル */
+        .menu-btn { 
+            display: block; 
+            width: 320px; 
+            padding: 18px; 
+            margin: 15px 0; 
+            background-color: #333; 
+            color: white; 
+            text-decoration: none; 
+            font-size: 1.1em; 
+            border: 1px solid #555; 
+            border-radius: 8px; 
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        /* 受注管理（稼働中）のホバー */
+        .menu-btn.active:hover { 
+            background-color: #444; 
+            border-color: #007bff; 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+
+        /* 準備中のボタン */
+        .menu-btn.disabled {
+            color: #777;
+            cursor: default;
+            border-style: dashed;
+        }
+
+        /* ログアウトセクション */
+        .logout-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+        }
+
+        .logout-btn {
+            background: none; 
+            border: 1px solid #ff4444; 
+            color: #ff4444; 
+            padding: 8px 20px; 
+            cursor: pointer; 
+            border-radius: 4px;
+            font-size: 0.9em;
+            transition: 0.2s;
+        }
+
+        .logout-btn:hover {
+            background-color: #ff4444;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="menu-container">
+        <h1>受発注管理システム</h1>
+        
+        <div class="user-info">
+            ログイン中: <strong>{{ user.username }}</strong> さん
+        </div>
+
+        <nav>
+            <a href="{% url 'order_list' %}" class="menu-btn active">受注管理 (Order)</a>
+            
+            <div class="menu-btn disabled">出荷入力 (Shipment) ※準備中</div>
+            <div class="menu-btn disabled">請求書発行 (Invoice) ※準備中</div>
+        </nav>
+
+        <div class="logout-section">
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="logout-btn">
+                    ログアウトして終了
+                </button>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

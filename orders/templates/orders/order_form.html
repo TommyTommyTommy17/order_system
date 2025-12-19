@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>受注入力</title>
+    <style>
+        body { 
+            background-color: #1a1a1a; 
+            color: white; 
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; 
+            font-size: 14px;
+            padding: 20px; 
+            line-height: 1.2;
+        }
+
+        .header-buttons { text-align: right; margin-bottom: 20px; }
+        .header-buttons button { 
+            background-color: #333; color: white; border: 1px solid white; 
+            padding: 5px 20px; margin-left: 5px; cursor: pointer; font-family: inherit;
+        }
+        
+        .form-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+        label { display: block; font-size: 13px; margin-bottom: 3px; color: #ccc; }
+        
+        input[type="text"], input[type="number"], input[type="date"], select, textarea {
+            width: 100%; 
+            background: #000; 
+            color: #fff; 
+            border: 1px solid #555; 
+            padding: 4px 8px; 
+            height: 30px; 
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 14px;
+            color-scheme: dark;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+        }
+        textarea { height: auto; }
+        .readonly-field { background-color: #222 !important; color: #888 !important; }
+        
+        .section-title {
+            border-bottom: 1px solid #555; 
+            margin-top: 25px; 
+            margin-bottom: 15px; 
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        /* 配合データセクションの調整 */
+        .item-row { 
+            display: grid; 
+            grid-template-columns: repeat(6, 1fr); 
+            gap: 10px; 
+            margin-bottom: 15px;
+        }
+
+        .flex-item { 
+            display: flex; 
+            align-items: center; 
+        }
+        
+        .flex-item label { 
+            margin-bottom: 0; 
+            margin-right: 8px; 
+            white-space: nowrap;
+            min-width: 75px; /* 表題の幅を一定に */
+            color: #fff;
+        }
+
+        /* 配合データの入力欄：5桁程度に固定 */
+        .flex-item input[type="text"],
+        .flex-item input[type="number"] {
+            width: 65px !important; /* 5桁+余白 */
+            text-align: right;      /* 数字入力のため右寄せ */
+            flex-grow: 0;           /* 幅が広がらないように固定 */
+        }
+
+        /* チェックボックスのスタイル */
+        .flex-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            margin: 0;
+        }
+        /* ブラウザ標準の数値増減矢印を消す設定 */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield; /* Firefox用 */
+        }
+    </style>
+</head>
+<body>
+    <form method="post">
+        {% csrf_token %}
+        {% if form.errors %}
+            <div style="background-color: #ff4444; color: white; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
+                <strong>入力エラーがあります：</strong>
+                <ul>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        <div class="header-buttons">
+            <button type="submit">保存</button>
+            <button type="button" onclick="window.location.reload();">中止</button>
+            <button type="button" onclick="window.close();">閉じる</button>
+        </div>
+
+        <div class="form-grid">
+            <div style="grid-column: span 1;">{{ form.issue_no.label_tag }}{{ form.issue_no }}</div>
+            <div style="grid-column: span 1;">{{ form.issue_date.label_tag }}{{ form.issue_date }}</div>
+            
+            <div style="grid-column: span 6;">{{ form.site.label_tag }}{{ form.site }}</div>
+            <div style="grid-column: span 6;">{{ form.site_address.label_tag }}{{ form.site_address }}</div>
+            
+            <div style="grid-column: span 3;">{{ form.customer.label_tag }}{{ form.customer }}</div>
+            
+            <div style="grid-column: 1 / span 3;">{{ form.contractor.label_tag }}{{ form.contractor }}</div>
+            
+            <div style="grid-column: 1 / span 1;">{{ form.coordinator.label_tag }}{{ form.coordinator }}</div>
+            <div style="grid-column: span 1;">{{ form.contact.label_tag }}{{ form.contact }}</div>
+            <div style="grid-column: span 3;">{{ form.product.label_tag }}{{ form.product }}</div>
+            <div style="grid-column: span 1;">{{ form.product_category.label_tag }}{{ form.product_category }}</div>
+            
+            <div style="grid-column: span 6;">{{ form.note.label_tag }}{{ form.note }}</div>
+            
+            <div style="grid-column: span 1;">{{ form.firstship_date.label_tag }}{{ form.firstship_date }}</div>
+            <div style="grid-column: span 1;">{{ form.qty.label_tag }}{{ form.qty }}</div>
+            <div style="grid-column: span 1;">{{ form.rotation.label_tag }}{{ form.rotation }}</div>
+            <div style="grid-column: span 1;">{{ form.price.label_tag }}{{ form.price }}</div>
+        </div>
+
+        <div class="section-title">配合データ・条件</div>
+        
+        <div class="item-row">
+            <div class="flex-item"><label>原料土</label>{{ form.material_soil }}</div>
+            <div class="flex-item"><label>水</label>{{ form.water }}</div>
+            <div class="flex-item"><label>セメントBB</label>{{ form.cementBB }}</div>
+            <div class="flex-item"><label>再生砂</label>{{ form.recycle_sand }}</div>
+            <div class="flex-item"><label>混和剤</label>{{ form.admixture }}</div>
+            <div class="flex-item"><label>原料土wm</label>{{ form.material_soil_wm }}</div>
+        </div>
+
+        <div class="item-row">
+            <div class="flex-item"><label>現場試験</label>{{ form.test }}</div>
+            <div class="flex-item"><label>夜間</label>{{ form.night }}</div>
+            <div class="flex-item"><label>２３区外</label>{{ form.outside23 }}</div>
+            <div class="flex-item"><label>材料渡し</label>{{ form.material_delivery }}</div>
+        </div>
+        
+        <div class="form-grid" style="margin-top:10px;">
+            <div style="grid-column: span 6;">{{ form.specialnote.label_tag }}{{ form.specialnote }}</div>
+        </div>
+    </form>
+</body>
+</html>
