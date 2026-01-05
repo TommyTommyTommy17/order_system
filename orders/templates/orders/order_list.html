@@ -2,57 +2,120 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>受注一覧</title>
+    <title>受注一覧 - 業務管理システム</title>
     <style>
-        body { background-color: #1a1a1a; color: white; font-family: sans-serif; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #444; pb: 10px; }
-        .new-btn { background-color: #0056b3; color: white; border: none; padding: 10px 20px; cursor: pointer; text-decoration: none; font-weight: bold; }
+        body { background-color: #1a1a1a; color: #e0e0e0; font-family: "Meiryo", sans-serif; margin: 0; padding: 20px; }
+        h2 { border-left: 5px solid #007bff; padding-left: 15px; margin-bottom: 25px; }
+        .nav-container { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .nav-left { display: flex; gap: 10px; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #444; padding: 12px; text-align: left; }
-        th { background-color: #333; color: #ccc; }
-        tr:hover { background-color: #252525; }
+        /* 基本ボタン（トップメニュー等） */
+        .btn { text-decoration: none; padding: 10px 18px; border-radius: 4px; font-size: 0.9em; font-weight: bold; display: inline-block; transition: opacity 0.2s; }
+        .btn:hover { opacity: 0.8; }
+        .btn-secondary { background-color: #444; color: white; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-success { background-color: #28a745; color: white; }
+
+        /* --- 修正：操作ボタンのサイズを統一 --- */
+        .btn-action {
+            text-decoration: none;
+            padding: 5px 0; /* 上下は固定、左右はwidthで制御 */
+            width: 55px;   /* ボタンの横幅をすべて統一 */
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            display: inline-block;
+            text-align: center;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-info    { background-color: #17a2b8; color: white; } /* 編集 */
+        .btn-warning { background-color: #ffc107; color: #212529; } /* 分岐 */
+        .btn-ship    { background-color: #ff8c00; color: white; } /* 出荷 */
         
-        .action-btn { background-color: #444; color: white; border: 1px solid #666; padding: 5px 10px; text-decoration: none; font-size: 0.8em; margin-right: 5px; }
-        .action-btn:hover { background-color: #666; }
+        .table-container { overflow-x: auto; background-color: #262626; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        
+        /* --- 修正：テーブルのレイアウト固定 --- */
+        table { width: 100%; border-collapse: collapse; table-layout: auto; }
+        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #444; vertical-align: middle; }
+        th { background-color: #333; color: #aaa; font-size: 0.85em; white-space: nowrap; }
+        
+        /* 列ごとの微調整 */
+        .col-issue { width: 90px; }
+        .col-qty { width: 80px; }
+        .col-op { width: 190px; }     /* 操作ボタン3つ分 */
+        .col-insert { width: 180px; }  /* 日付入力欄分 */
+
+        .issue-no { color: #00ffcc; font-weight: bold; font-family: monospace; }
+        
+        /* 日付入力欄のスタイル */
+        .insert-date-input { 
+            background: #333; 
+            color: white; 
+            border: 1px solid #555; 
+            border-radius: 4px; 
+            padding: 5px; 
+            cursor: pointer;
+            width: 130px;
+            font-size: 0.85em;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h2>受注一覧（{{ today|date:"Y/m/d" }}）</h2>
-        <a href="{% url 'order_new' %}" class="new-btn">＋ 新規受注作成</a>
+    <h2>受注案件一覧</h2>
+    <div class="nav-container">
+        <div class="nav-left">
+            <a href="{% url 'menu' %}" class="btn btn-secondary">← トップメニュー</a>
+            <a href="{% url 'schedule_board' %}" class="btn btn-primary">出荷スケジュール表示</a>
+        </div>
+        <div class="nav-right">
+            <a href="{% url 'order_new' %}" class="btn btn-success">+ 新規受注登録</a>
+        </div>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>契約NO</th>
-                <th>現場名</th>
-                <th>得意先</th>
-                <th>契約数量</th>
-                <th>商品名</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for order in orders %}
-            <tr>
-                <td>{{ order.issue_no }}</td>
-                <td>{{ order.site }}</td>
-                <td>{{ order.customer }}</td>
-                <td>{{ order.qty }}</td>
-                <td>{{ order.product }}</td>
-                <td>
-                    <a href="{% url 'order_edit' order.issue_no %}" class="action-btn">編集</a>
-                    <a href="{% url 'order_branch' order.issue_no %}" class="action-btn" style="border-color: #007bff;">分岐</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="6" style="text-align: center; color: #888;">本日の受注データはありません。</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-issue">契約NO</th>
+                    <th>現場名</th>
+                    <th>得意先</th>
+                    <th>担当者</th>
+                    <th class="col-qty">数量</th>
+                    <th class="col-op">操作</th>
+                    <th class="col-insert">予定へ挿入（日付選択）</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td class="issue-no">{{ order.issue_no }}</td>
+                    <td style="color:white; font-weight:bold;">{{ order.site }}</td>
+                    <td>{{ order.customer }}</td>
+                    <td>{{ order.coordinator.display_name|default:"-" }}</td>
+                    <td>{{ order.qty }} m³</td>
+                    <td class="col-op">
+                        <a href="{% url 'order_edit' order.pk %}" class="btn-action btn-info">編集</a>
+                        <a href="{% url 'order_branch' order.pk %}" class="btn-action btn-warning">分岐</a>
+                        <a href="{% url 'shipment_create' %}?issue_no={{ order.issue_no }}" class="btn-action btn-ship">出荷</a>
+                    </td>
+                    <td class="col-insert">
+                        <input type="date" class="insert-date-input" 
+                               onchange="jumpWithData('{{ order.site|escapejs }}', '{{ order.issue_no }}', this.value)">
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function jumpWithData(site, issueNo, date) {
+            if (!date) return;
+            const baseUrl = "{% url 'schedule_board' %}";
+            const url = `${baseUrl}?jump_date=${date}&auto_site=${encodeURIComponent(site)}&auto_no=${issueNo}`;
+            window.location.href = url;
+        }
+    </script>
 </body>
 </html>

@@ -1,0 +1,23 @@
+<form method="post">
+    {% csrf_token %}
+    <table>
+        <thead>
+            <tr>
+                <th>区分</th><th>項目名</th><th>仕切り価格 (実績用)</th><th>標準価格</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in masters %}
+            <tr>
+                <td>{{ item.category }}</td>
+                <td>{{ item.item_name }}</td>
+                <td>
+                    <input type="text" name="price_{{ item.id }}" value="{{ item.partition_price }}" inputmode="numeric">
+                </td>
+                <td>{{ item.standard_price }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <button type="submit">マスタ情報を一括保存</button>
+</form>

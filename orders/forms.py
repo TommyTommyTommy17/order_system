@@ -1,5 +1,5 @@
 from django import forms
-from .models import Order
+from .models import Order, Shipment
 
 class OrderForm(forms.ModelForm):
     class Meta:
@@ -17,3 +17,14 @@ class OrderForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['issue_no'].required = False
+
+class ShipmentForm(forms.ModelForm):
+    class Meta:
+        model = Shipment
+        fields = '__all__' # または画像に基づき必要な項目を列挙
+        widgets = {
+            'ship_date': forms.DateInput(attrs={'type': 'date'}),
+            'ship_time': forms.TimeInput(attrs={'type': 'time'}),
+            'note': forms.Textarea(attrs={'rows': 2}),
+            'specialnote': forms.Textarea(attrs={'rows': 2}),
+        }

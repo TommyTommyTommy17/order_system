@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>出荷予定管理ボード</title>
+    <style>
+        :root { --border-color: #444; }
+        body { background-color: #1a1a1a; color: white; font-family: "Meiryo", sans-serif; margin: 0; overflow: hidden; }
+        
+        /* ツールバー：高さを固定しつつ、中身がはみ出さないバランスに */
+        .toolbar { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 0 15px; background: #262626; border-bottom: 1px solid var(--border-color);
+            height: 38px; position: sticky; top: 0; z-index: 100;
+        }
+        .board-viewport { height: calc(100vh - 38px); overflow: auto; position: relative; background-color: #000; }
+        .board-grid { display: grid; grid-template-columns: repeat(7, var(--day-width)); gap: 1px; width: max-content; }
+        .day-cell { background-color: #1a1a1a; display: flex; flex-direction: column; width: var(--day-width); border-right: 1px solid var(--border-color); }
+
+        /* 日付ヘッダー：平日は濃いネイビー / 高さをセルの半分に連動 */
+        .day-header { 
+            background: #3d4d5d; color: #ffffff;
+            font-size: var(--header-font); text-align: center; 
+            height: calc(var(--cell-height) * 0.5); line-height: calc(var(--cell-height) * 0.5);
+            border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 30; font-weight: bold; 
+        }
+        .day-header.sun { color: #ff6666; background: #500; }
+        .day-header.sat { color: #66a3ff; background: #003366; }
+
+        .excel-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .excel-table td { border: 1px solid #333; height: var(--cell-height); font-size: var(--font-size); padding: 0; vertical-align: middle; }
+        
+        /* セクション・ラベル行：セルの高さの35%〜40%に自動連動させ、隙間感を解消 */
+        .section-header { 
+            background: #2a2a2a; color: #ff8c00; font-weight: bold; 
+            height: calc(var(--cell-height) * 0.4) !important; 
+            text-align: center; font-size: calc(var(--font-size) * 0.85); 
+        }
+        .col-label { 
+            background: #222; color: #777; 
+            height: calc(var(--cell-height) * 0.35) !important; 
+            text-align: center; font-size: calc(var(--font-size) * 0.75); 
+        }
+
+        .excel-table textarea, .excel-table input { 
+            width: 100%; height: 100%; border: none; background: transparent; 
+            color: white; outline: none; font-size: var(--font-size); font-family: inherit;
+            resize: none; overflow: hidden; padding: 1px 4px; box-sizing: border-box;
+            display: block; white-space: pre-wrap; word-break: break-all; line-height: 1.1;
+        }
+
+        /* ズーム設定：すべての比率の基準 */
+        .zoom-1 { --day-width: 14.2vw; --cell-height: 38px; --font-size: 10px; --header-font: 11px; --w-idx: 20px; --w-time: 45px; --w-qty: 45px; --w-truck: 32px; --w-note: 55px; }
+        .zoom-2 { --day-width: 400px; --cell-height: 48px; --font-size: 15px; --header-font: 17px; --w-idx: 28px; --w-time: 60px; --w-qty: 60px; --w-truck: 40px; --w-note: 90px; }
+        .zoom-3 { --day-width: 700px; --cell-height: 75px; --font-size: 22px; --header-font: 26px; --w-idx: 38px; --w-time: 90px; --w-qty: 90px; --w-truck: 60px; --w-note: 150px; }
+        .zoom-4 { --day-width: 1100px; --cell-height: 115px; --font-size: 30px; --header-font: 36px; --w-idx: 45px; --w-time: 130px; --w-qty: 130px; --w-truck: 90px; --w-note: 220px; }
+
+        .col-idx { width: var(--w-idx); text-align: center; }
+        .col-time { width: var(--w-time); }
+        .col-qty { width: var(--w-qty); }
+        .col-truck { width: var(--w-truck); }
+        .col-note { width: var(--w-note); }
+        .col-site { width: auto; }
+
+        .saving-active { background-color: #005a2b !important; }
+        
+        /* 合計行：文字サイズを入力欄より20%大きく設定 */
+        .total-row { 
+            background: #111; color: #00ffcc; font-weight: bold; 
+            height: calc(var(--cell-height) * 0.6) !important; 
+            font-size: calc(var(--font-size) * 1.2); 
+        }
+        .total-label { text-align: right; padding-right: 8px; }
+
+        .btn-tool { background: #444; color: white; border: 1px solid #666; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .autocomplete-list { position: absolute; z-index: 2000; background: #2a2a2a; border: 1px solid #007bff; max-height: 250px; overflow-y: auto; width: 400px; display:none; }
+        .autocomplete-item { padding: 8px; cursor: pointer; border-bottom: 1px solid #444; }
+        .autocomplete-item:hover { background: #004085; }
+        .data-row { cursor: pointer; }
+        .data-row:hover { background-color: #2a2a2a; }
+    </style>
+</head>
+<body>
+<div class="toolbar">
+    <div id="date-label"><strong>出荷予定</strong></div>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <input type="date" id="jump-date" onchange="jumpToDate(this.value)" style="background: #333; color: white; border: 1px solid #555; padding: 2px;">
+        <button onclick="goToToday()" class="btn-tool" style="background: #007bff; border: none;">今日</button>
+        <div style="background: #333; padding: 2px 8px; border-radius: 15px; border: 1px solid #444; display: flex; gap: 8px;">
+            <button onclick="changeZoom(-1)" class="btn-tool">－</button>
+            <span id="zoom-display" style="font-size: 12px; min-width: 65px; text-align: center;">1週間(1)</span>
+            <button onclick="changeZoom(1)" class="btn-tool">＋</button>
+        </div>
+    </div>
+    <a href="{% url 'menu' %}" style="color: #ccc; text-decoration: none; font-size: 12px;">メニューへ戻る</a>
+</div>
+
+<div id="ac-container" class="autocomplete-list"></div>
+<div class="board-viewport" id="viewport">
+    <div id="board" class="board-grid zoom-1"></div>
+</div>
+
+<script>
+    const board = document.getElementById('board'), 
+          viewport = document.getElementById('viewport'), 
+          acContainer = document.getElementById('ac-container'), 
+          jumpDateInput = document.getElementById('jump-date');
+
+    let nextDate = new Date(), prevDate = new Date(), isLoading = false, zoomLevel = 1;
+    const weekDays = ["日", "月", "火", "水", "木", "金", "土"];
+
+    function getMonday(d) {
+        d = new Date(d); const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(d.setDate(diff));
+    }
+
+    function changeZoom(delta) {
+        zoomLevel = Math.max(1, Math.min(4, zoomLevel + delta));
+        board.className = "board-grid zoom-" + zoomLevel;
+        document.getElementById('zoom-display').innerText = ["1週間(1)", "標準(2)", "大(3)", "特大(4)"][zoomLevel - 1];
+    }
+
+    /* Ctrl + ホイール：ターゲット追従ズーム */
+    window.addEventListener('wheel', (e) => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            const rect = viewport.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left, mouseY = e.clientY - rect.top;
+            const absX = viewport.scrollLeft + mouseX, absY = viewport.scrollTop + mouseY;
+            const rX = absX / board.offsetWidth, rY = absY / board.offsetHeight;
+            const delta = e.deltaY < 0 ? 1 : -1, oldZ = zoomLevel;
+            changeZoom(delta);
+            if (oldZ !== zoomLevel) {
+                viewport.scrollLeft = (board.offsetWidth * rX) - mouseX;
+                viewport.scrollTop = (board.offsetHeight * rY) - mouseY;
+            }
+        }
+    }, { passive: false });
+
+    /* ダブルクリックで出荷入力へ */
+    board.addEventListener('dblclick', (e) => {
+        const row = e.target.closest('.data-row');
+        if (row && row.dataset.issueNo) {
+            window.location.href = `{% url 'shipment_create' %}?issue_no=${row.dataset.issueNo}`;
+        }
+    });
+
+    function createDayTable(dateObj) {
+        const dateStr = dateObj.toISOString().split('T')[0];
+        const displayDate = (dateObj.getMonth() + 1) + "/" + dateObj.getDate() + " (" + weekDays[dateObj.getDay()] + ")";
+        const headerClass = dateObj.getDay() === 0 ? 'sun' : (dateObj.getDay() === 6 ? 'sat' : '');
+        const colLabels = '<tr class="col-label"><td class="col-idx">No</td><td class="col-site">現場名</td><td class="col-time">時間</td><td class="col-qty">数量</td><td class="col-truck">台</td><td class="col-note">備考</td></tr>';
+        
+        const genRows = function(prefix, count) {
+            let rows = "";
+            for (let i = 1; i <= count; i++) {
+                // type="text" + inputmode で矢印(スピンボタン)を完全に排除
+                rows += `<tr class="data-row ${prefix}-row" data-section="${prefix}" data-row-index="${i}" data-issue-no="">
+                    <td class="col-idx" style="color:#888; background:#222;">${i}</td>
+                    <td class="col-site"><textarea class="input-site" oninput="handleAutocomplete(this)" onblur="saveData(this)" onkeydown="handleEnterKey(event, this)"></textarea></td>
+                    <td class="col-time"><input type="text" class="input-time" placeholder="0:00" onblur="saveData(this)" onkeydown="handleEnterKey(event, this)"></td>
+                    <td class="col-qty"><input type="text" class="qty-val input-qty" inputmode="decimal" oninput="calcTotal('${dateStr}')" onblur="saveData(this)" onkeydown="handleEnterKey(event, this)"></td>
+                    <td class="col-truck"><input type="text" class="truck-val input-truck" inputmode="numeric" oninput="calcTotal('${dateStr}')" onblur="saveData(this)" onkeydown="handleEnterKey(event, this)"></td>
+                    <td class="col-note"><textarea class="input-note" onblur="saveData(this)" onkeydown="handleEnterKey(event, this)"></textarea></td>
+                </tr>`;
+            }
+            return rows;
+        };
+
+        return `<div class="day-cell" id="day-${dateStr}" data-date="${dateStr}">
+            <div class="day-header ${headerClass}">${displayDate}</div>
+            <table class="excel-table">
+            <colgroup><col class="col-idx"><col class="col-site"><col class="col-time"><col class="col-qty"><col class="col-truck"><col class="col-note"></colgroup>
+            <tr class="section-header"><td colspan="6">EL</td></tr>
+            ${colLabels}${genRows('el', 9)}
+            <tr class="total-row"><td colspan="3" class="total-label">EL計</td><td class="el-total-qty" style="text-align:right; padding-right:4px;">0</td><td class="el-total-truck" style="text-align:center;">0</td><td></td></tr>
+            <tr class="section-header"><td colspan="6">他工場</td></tr>
+            ${colLabels}${genRows('other', 5)}
+            <tr class="total-row"><td colspan="3" class="total-label">他工場計</td><td class="other-total-qty" style="text-align:right; padding-right:4px;">0</td><td class="other-total-truck" style="text-align:center;">0</td><td></td></tr>
+            </table></div>`;
+    }
+
+    function calcTotal(id) {
+        const d = document.getElementById("day-" + id); if (!d) return;
+        const sum = sel => {
+            let t = 0;
+            d.querySelectorAll(sel).forEach(i => {
+                const val = parseFloat(i.value); if (!isNaN(val)) t += val;
+            });
+            return Math.round(t * 10) / 10;
+        };
+        d.querySelector('.el-total-qty').innerText = sum('.el-row .qty-val');
+        d.querySelector('.el-total-truck').innerText = sum('.el-row .truck-val');
+        d.querySelector('.other-total-qty').innerText = sum('.other-row .qty-val');
+        d.querySelector('.other-total-truck').innerText = sum('.other-row .truck-val');
+    }
+
+    async function loadPlans() {
+        const res = await fetch('/orders/get_plans/'); const plans = await res.json();
+        plans.forEach(p => {
+            const d = document.getElementById("day-" + p.date);
+            if (d) {
+                const r = d.querySelector("." + p.section + "-row[data-row-index='" + p.row_index + "']");
+                if (r) {
+                    r.querySelector('.input-site').value = p.site || '';
+                    r.querySelector('.input-time').value = p.time || '';
+                    r.querySelector('.input-qty').value = p.qty || '';
+                    r.querySelector('.input-truck').value = p.truck || '';
+                    r.querySelector('.input-note').value = p.note || '';
+                    r.dataset.issueNo = p.issue_no || '';
+                }
+            }
+        });
+        document.querySelectorAll('.day-cell').forEach(c => calcTotal(c.dataset.date));
+    }
+
+    async function saveData(input) {
+        setTimeout(async () => {
+            const row = input.closest('tr'), day = input.closest('.day-cell');
+            const payload = {
+                date: day.dataset.date, section: row.getAttribute('data-section'), row_index: row.getAttribute('data-row-index'),
+                site: row.querySelector('.input-site').value, time: row.querySelector('.input-time').value,
+                qty: row.querySelector('.input-qty').value, truck: row.querySelector('.input-truck').value,
+                note: row.querySelector('.input-note').value, issue_no: row.dataset.issueNo || ''
+            };
+            await fetch('/orders/save_plan/', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify(payload)
+            });
+            input.parentElement.classList.add('saving-active'); setTimeout(() => input.parentElement.classList.remove('saving-active'), 500);
+        }, 200);
+    }
+
+    function appendDays(count) { if (isLoading) return; isLoading = true; let html = ""; for (let i = 0; i < count; i++) { html += createDayTable(new Date(nextDate)); nextDate.setDate(nextDate.getDate() + 1); } board.insertAdjacentHTML('beforeend', html); loadPlans(); isLoading = false; }
+    function prependDays(count) { if (isLoading) return; isLoading = true; const bh = board.scrollHeight; let html = ""; for (let i = 0; i < count; i++) { prevDate.setDate(prevDate.getDate() - 1); html = createDayTable(new Date(prevDate)) + html; } board.insertAdjacentHTML('afterbegin', html); viewport.scrollTop += (board.scrollHeight - bh); loadPlans(); isLoading = false; }
+    function jumpToDate(s) { if (!s) return; board.innerHTML = ""; const monday = getMonday(new Date(s)); nextDate = new Date(monday); prevDate = new Date(monday); appendDays(42); viewport.scrollTop = 0; }
+    function goToToday() { const t = new Date(); const s = t.toISOString().split('T')[0]; jumpDateInput.value = s; jumpToDate(s); }
+    viewport.addEventListener('scroll', () => { if (viewport.scrollTop + viewport.clientHeight >= viewport.scrollHeight - 400) appendDays(14); if (viewport.scrollTop <= 100) prependDays(14); });
+    function handleEnterKey(e, c) { if (e.key === 'Enter') { e.preventDefault(); const r = c.closest('tr'), ins = Array.from(r.querySelectorAll('input, textarea')), idx = ins.indexOf(c); if (idx < ins.length - 1) ins[idx + 1].focus(); } }
+    async function handleAutocomplete(i) { const t = i.value; if (t.length < 1) { acContainer.style.display = 'none'; return; } const res = await fetch('/orders/autocomplete/?term=' + encodeURIComponent(t)), data = await res.json(); if (data.length > 0) { const rect = i.getBoundingClientRect(); acContainer.style.left = rect.left + 'px'; acContainer.style.top = (rect.bottom + window.scrollY) + 'px'; acContainer.style.display = 'block'; acContainer.innerHTML = data.map(o => `<div class="autocomplete-item" onclick="window.selectOrder('${o.site}', '${o.issue_no}')"><strong>${o.site}</strong><br><small>NO: ${o.issue_no}</small></div>`).join(''); window.currentInput = i; } else { acContainer.style.display = 'none'; } }
+    window.selectOrder = function(s, n) { if (window.currentInput) { window.currentInput.value = s; const r = window.currentInput.closest('tr'); r.dataset.issueNo = n; acContainer.style.display = 'none'; saveData(window.currentInput); } };
+    window.onload = () => goToToday();
+</script>
+</body>
+</html>
