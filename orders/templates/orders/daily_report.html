@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>実績管理表 - 業務管理システム</title>
+    <style>
+        body { background-color: #1a1a1a; color: #e0e0e0; font-family: "Meiryo", sans-serif; margin: 0; padding: 20px; }
+        .no-print { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .btn { text-decoration: none; padding: 10px 18px; border-radius: 4px; font-size: 0.9em; font-weight: bold; cursor: pointer; border: none; }
+        .btn-secondary { background-color: #444; color: white; }
+        .btn-print { background-color: #28a745; color: white; }
+
+        h2 { border-left: 5px solid #007bff; padding-left: 15px; margin: 0; }
+
+        /* テーブルデザインの修正 */
+        .table-container { background-color: #262626; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { border: 1px solid #444; padding: 10px; font-size: 0.85em; vertical-align: middle; }
+        
+        th { background-color: #333; color: #aaa; text-align: center; }
+        .text-right { text-align: right; }
+        .issue-no { color: #00ffcc; font-weight: bold; font-family: monospace; }
+        
+        /* 列幅の固定 */
+        .col-no { width: 80px; }
+        .col-plan { width: 70px; }
+        .col-info { width: 250px; }
+        .col-item { width: auto; }
+        .col-qty { width: 80px; }
+        .col-price { width: 90px; }
+        .col-total { width: 110px; }
+
+        @media print {
+            .no-print { display: none; }
+            body { background-color: white; color: black; padding: 0; }
+            .table-container { box-shadow: none; border-radius: 0; }
+            th, td { border: 1px solid #000; color: black; }
+            th { background-color: #eee; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print">
+        <h2>実績管理表 ({{ target_date }})</h2>
+        <div>
+            <a href="{% url 'menu' %}" class="btn btn-secondary">← メニューへ戻る</a>
+            <button onclick="window.print()" class="btn btn-print">🖨️ A4印刷</button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-no">No</th>
+                    <th class="col-plan">予定台数</th>
+                    <th class="col-info">契約・得意先・現場</th>
+                    <th class="col-item">項目</th>
+                    <th class="col-qty">数量/回数</th>
+                    <th class="col-price">単価</th>
+                    <th class="col-total">金額</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in report_data %}
+                    {% for row in data.rows %}
+                    <tr>
+                        {% if forloop.first %}
+                        <td rowspan="{{ data.rows|length }}" class="issue-no" style="text-align:center;">{{ data.issue_no }}</td>
+                        <td rowspan="{{ data.rows|length }}" style="text-align:center;">{{ data.truck_planned }}台</td>
+                        <td rowspan="{{ data.rows|length }}" style="font-size: 0.8em; line-height: 1.4;">
+                            NO: {{ data.issue_no }}<br>
+                            客: {{ data.customer }}<br>
+                            現: {{ data.site }}
+                        </td>
+                        {% endif %}
+                        
+                        <td>{{ row.item }}</td>
+                        <td class="text-right">{{ row.unit }}</td>
+                        <td class="text-right">¥{{ row.price|default:"0" }}</td>
+                        <td class="text-right" style="font-weight:bold; color:#fff;">¥{{ row.total|floatformat:0 }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr style="border-bottom: 2px solid #555;"><td colspan="7" style="padding: 0; height: 0;"></td></tr>
+                {% empty %}
+                <tr><td colspan="7" style="text-align:center; padding:40px;">該当日のデータがありません</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>

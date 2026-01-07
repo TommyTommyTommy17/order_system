@@ -15,6 +15,11 @@ env/
 # Django 設定（秘密鍵などが含まれる場合）
 .env
 local_settings.py
+# アップロードされた画像ファイル（本番データと混ざるのを防ぐ）
+media/
+
+# 集約されたスタティックファイル
+staticfiles/
 
 # Docker（使用している場合）
 .docker/

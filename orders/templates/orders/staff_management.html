@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>システム管理 - 業務管理システム</title>
+    <style>
+        body { background-color: #1a1a1a; color: #e0e0e0; font-family: "Meiryo", sans-serif; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .card { background-color: #262626; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444; }
+        h2 { border-left: 5px solid #007bff; padding-left: 15px; margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #444; padding: 10px; text-align: left; font-size: 0.9em; }
+        th { background-color: #333; color: #aaa; }
+        input[type="text"], input[type="password"], input[type="number"] { 
+            background: #333; color: white; border: 1px solid #555; padding: 8px; border-radius: 4px;
+        }
+        .btn { padding: 8px 15px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; text-decoration: none; display: inline-block; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; font-size: 0.8em; }
+        .nav-link { color: #ccc; text-decoration: none; font-size: 0.9em; margin-bottom: 20px; display: block; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="{% url 'menu' %}" class="nav-link">← メニューへ戻る</a>
+    
+    <div class="card">
+        <h2>システム設定</h2>
+        <form method="post">
+            {% csrf_token %}
+            <label>自動ログアウト時間：</label>
+            <input type="number" name="session_timeout_minutes" value="{{ config.session_timeout_minutes }}" style="width: 60px;"> 分
+            <button type="submit" name="update_config" class="btn btn-primary">設定保存</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>担当者マスタ管理</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ユーザーID</th>
+                    <th>表示名</th>
+                    <th>権限</th>
+                    <th>パスワードリセット</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in staff_users %}
+                <tr>
+                    <td>{{ u.username }}</td>
+                    <td>{{ u.display_name }}</td>
+                    <td>{% if u.is_admin_user %}<span style="color: #ff8c00;">管理者</span>{% else %}担当者{% endif %}</td>
+                    <td>
+                        <form method="post" action="{% url 'reset_password' u.pk %}" style="display:flex; gap:5px;">
+                            {% csrf_token %}
+                            <input type="text" name="new_password" placeholder="新しいパスワード" style="width: 120px; font-size: 0.8em;">
+                            <button type="submit" class="btn btn-danger">変更</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>新規担当者登録</h2>
+        <form method="post">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                <input type="text" name="username" placeholder="ユーザーID" required>
+                <input type="text" name="display_name" placeholder="表示名">
+                <input type="password" name="password" placeholder="初期パスワード" required>
+            </div>
+            <div style="margin-top: 10px;">
+                <label><input type="checkbox" name="is_admin_user"> 管理者権限を付与する</label>
+            </div>
+            <button type="submit" name="create_user" class="btn btn-success" style="margin-top: 15px;">新規登録</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

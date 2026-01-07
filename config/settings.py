@@ -128,3 +128,12 @@ LOGIN_REDIRECT_URL = 'menu'
 
 # ログアウト時のリダイレクト先
 LOGOUT_REDIRECT_URL = 'login'
+
+AUTH_USER_MODEL = 'orders.User' # カスタムユーザーモデルの使用を指定
+
+# ブラウザを閉じたらログアウト
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'menu'  # ログイン成功後にメニュー画面へ
+LOGOUT_REDIRECT_URL = 'login'

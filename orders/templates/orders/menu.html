@@ -2,122 +2,57 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>受発注管理システム - メニュー</title>
+    <title>メインメニュー - 業務管理システム</title>
     <style>
-        /* 全体のスタイル設定 */
         body { 
-            background-color: #1a1a1a; 
-            color: white; 
-            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            margin: 0; 
+            background-color: #1a1a1a; color: #e0e0e0; 
+            font-family: "Meiryo", sans-serif; margin: 0; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;
         }
+        .menu-container { width: 400px; text-align: center; }
+        h2 { border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 30px; }
+        
+        .menu-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        
+        .btn { 
+            text-decoration: none; padding: 15px; border-radius: 8px; 
+            font-size: 1.1em; font-weight: bold; transition: 0.2s; display: block;
+        }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-success { background-color: #28a745; color: white; }
+        .btn-warning { background-color: #ff8c00; color: white; }
+        /* 管理者専用ボタンのスタイル */
+        .btn-admin { background-color: #6c757d; color: white; border: 1px dashed #adb5bd; margin-top: 20px; }
+        
+        .btn:hover { opacity: 0.8; transform: translateY(-2px); }
 
-        .menu-container { 
-            text-align: center; 
-            background-color: #262626; 
-            padding: 40px 60px; 
-            border-radius: 12px; 
-            border: 1px solid #444;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        }
-
-        h1 { 
-            margin-bottom: 10px; 
-            font-size: 2em; 
-            letter-spacing: 2px;
-        }
-
-        .user-info {
-            color: #aaa;
-            margin-bottom: 30px;
-            font-size: 0.9em;
-        }
-
-        /* メニューボタンのスタイル */
-        .menu-btn { 
-            display: block; 
-            width: 320px; 
-            padding: 18px; 
-            margin: 15px 0; 
-            background-color: #333; 
-            color: white; 
-            text-decoration: none; 
-            font-size: 1.1em; 
-            border: 1px solid #555; 
-            border-radius: 8px; 
-            transition: all 0.3s ease;
-            box-sizing: border-box;
-        }
-
-        /* 受注管理（稼働中）のホバー */
-        .menu-btn.active:hover { 
-            background-color: #444; 
-            border-color: #007bff; 
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
-        }
-
-        /* 準備中のボタン */
-        .menu-btn.disabled {
-            color: #777;
-            cursor: default;
-            border-style: dashed;
-        }
-
-        /* ログアウトセクション */
-        .logout-section {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #444;
-        }
-
-        .logout-btn {
-            background: none; 
-            border: 1px solid #ff4444; 
-            color: #ff4444; 
-            padding: 8px 20px; 
-            cursor: pointer; 
-            border-radius: 4px;
-            font-size: 0.9em;
-            transition: 0.2s;
-        }
-
-        .logout-btn:hover {
-            background-color: #ff4444;
-            color: white;
-        }
+        .user-info { margin-bottom: 20px; font-size: 0.9em; color: #aaa; }
+        .logout-link { color: #ff6666; text-decoration: none; font-size: 0.8em; margin-top: 30px; display: inline-block; }
     </style>
 </head>
 <body>
 
-    <div class="menu-container">
-        <h1>受発注管理システム</h1>
-        
-        <div class="user-info">
-            ログイン中: <strong>{{ user.username }}</strong> さん
-        </div>
-
-        <nav>
-            <a href="{% url 'order_list' %}" class="menu-btn active">受注管理 (Order)</a>
-            <a href="{% url 'shipment_create' %}" class="menu-btn" style="background-color: #ff8c00;">新規出荷入力</a>
-            <div class="menu-btn disabled">出荷入力 (Shipment) ※準備中</div>
-            <div class="menu-btn disabled">請求書発行 (Invoice) ※準備中</div>
-        </nav>
-
-        <div class="logout-section">
-            <form method="post" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <button type="submit" class="logout-btn">
-                    ログアウトして終了
-                </button>
-            </form>
-        </div>
+<div class="menu-container">
+    <div class="user-info">
+        ログイン中：<strong>{{ user.display_name|default:user.username }}</strong> さん
+        {% if user.is_admin_user %}<span style="color: #ff8c00;">【管理者】</span>{% endif %}
     </div>
+
+    <h2>メインメニュー</h2>
+
+    <div class="menu-grid">
+        <a href="{% url 'order_list' %}" class="btn btn-primary">受注案件一覧</a>
+        <a href="{% url 'schedule_board' %}" class="btn btn-success">出荷スケジュール管理</a>
+        <a href="{% url 'daily_performance_report' %}" class="btn btn-warning">実績管理表 (N/k集計)</a>
+        
+        {% if user.is_admin_user %}
+            <a href="{% url 'staff_management' %}" class="btn btn-admin">⚙️ システム・担当者管理</a>
+            <a href="{% url 'master_setting' %}" class="btn btn-admin">💰 単価マスタ設定</a>
+        {% endif %}
+    </div>
+
+    <a href="{% url 'logout' %}" class="logout-link">ログアウト</a>
+</div>
 
 </body>
 </html>

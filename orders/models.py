@@ -1,14 +1,20 @@
 import datetime
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser,User
 from django.utils import timezone
+from django.conf import settings
 
 # 担当者マスタ
 class Staff(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    display_name = models.CharField(max_length=50, verbose_name="担当者名")
-    def __str__(self):
-        return self.display_name
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE,
+        related_name='staff_profile'
+    )
+
+class User(AbstractUser):
+    is_admin_user = models.BooleanField('管理者権限', default=False)
+    display_name = models.CharField('表示名', max_length=50, blank=True)
 
 # 受注テーブル
 class Order(models.Model):
@@ -143,3 +149,13 @@ class UnitPriceMaster(models.Model):
 
     def __str__(self):
         return f"{self.item_name}: {self.partition_price}円"
+
+
+class SystemConfig(models.Model):
+    """
+    システム全体の設定（タイムアウト時間 $N$ など）
+    """
+    session_timeout_minutes = models.IntegerField('セッション有効期限(分)', default=30)
+
+    class Meta:
+        verbose_name = 'システム設定'

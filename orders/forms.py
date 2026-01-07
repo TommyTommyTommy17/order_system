@@ -1,5 +1,5 @@
 from django import forms
-from .models import Order, Shipment
+from .models import Order, Shipment, User, SystemConfig
 
 class OrderForm(forms.ModelForm):
     class Meta:
@@ -28,3 +28,17 @@ class ShipmentForm(forms.ModelForm):
             'note': forms.Textarea(attrs={'rows': 2}),
             'specialnote': forms.Textarea(attrs={'rows': 2}),
         }
+
+class StaffForm(forms.ModelForm):
+    """担当者登録・編集用"""
+    password = forms.CharField(label="パスワード", widget=forms.PasswordInput, required=False, help_text="変更する場合のみ入力")
+
+    class Meta:
+        model = User
+        fields = ['username', 'display_name', 'is_admin_user']
+
+class SystemConfigForm(forms.ModelForm):
+    """タイムアウト設定用"""
+    class Meta:
+        model = SystemConfig
+        fields = ['session_timeout_minutes']
